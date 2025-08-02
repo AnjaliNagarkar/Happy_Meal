@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HappyMeal - Recipe Finder & Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#ff6b6b',
+                        secondary: '#4ecdc4',
+                        accent: '#45b7d1',
+                        dark: '#2c3e50',
+                        'warm-orange': '#ff9f43',
+                        'soft-green': '#6c5ce7'
+                    },
+                    fontFamily: {
+                        'poppins': ['Poppins', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        .recipe-card {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .recipe-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+        .star {
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1.2em;
+        }
+        .star.filled {
+            color: #fbbf24;
+            text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+        }
+        .star.empty {
+            color: #d1d5db;
+        }
+        .star:hover {
+            transform: scale(1.2);
+        }
+        .loading {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #ff6b6b 100%);
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .btn-glow {
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+        .btn-glow:hover {
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.5);
+            transform: translateY(-2px);
+        }
+        .floating {
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .slide-in {
+            animation: slideIn 0.5s ease-out;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .active-auth {
+            background: rgba(255, 255, 255, 0.3) !important;
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Login/Signup Section -->
+    <div id="authSection" class="min-h-screen gradient-bg flex items-center justify-center p-4">
+        <div class="max-w-md w-full">
+            <!-- Logo and Title -->
+            <div class="text-center mb-8">
+                <div class="floating text-6xl mb-4">🍽️</div>
+                <h1 class="text-4xl font-bold text-white mb-2">HappyMeal</h1>
+                <p class="text-white opacity-90">Your Personal Recipe Paradise</p>
+            </div>
+
+            <!-- Auth Container -->
+            <div class="glass-effect rounded-2xl p-8 shadow-2xl">
+                <!-- Auth Toggle -->
+                <div class="flex mb-6 bg-white bg-opacity-20 rounded-xl p-1">
+                    <button id="loginToggle" class="flex-1 py-2 px-4 rounded-lg text-white font-medium transition-all active-auth">
+                        <i class="fas fa-sign-in-alt mr-2"></i>Login
+                    </button>
+                    <button id="signupToggle" class="flex-1 py-2 px-4 rounded-lg text-white font-medium transition-all">
+                        <i class="fas fa-user-plus mr-2"></i>Sign Up
+                    </button>
+                </div>
+
+                <!-- Login Form -->
+                <form id="loginForm" class="space-y-4">
+                    <div>
+                        <label class="block text-white text-sm font-medium mb-2">
+                            <i class="fas fa-user mr-2"></i>Username
+                        </label>
+                        <input type="text" id="loginUsername" required 
+                               class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-xl text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                               placeholder="Enter your username">
+                    </div>
+                    <div>
+                        <label class="block text-white text-sm font-medium mb-2">
+                            <i class="fas fa-lock mr-2"></i>Password
+                        </label>
+                        <input type="password" id="loginPassword" required 
+                               class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-xl text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                               placeholder="Enter your password">
+                    </div>
+                    <button type="submit" class="w-full py-3 bg-white text-gray-800 rounded-xl font-semibold hover:bg-opacity-90 transition-all btn-glow">
+                        <i class="fas fa-sign-in-alt mr-2"></i>Login to HappyMeal
+                    </button>
+                </form>
+
+                <!-- Signup Form -->
+                <form id="signupForm" class="space-y-4 hidden">
+                    <div>
+                        <label class="block text-white text-sm font-medium mb-2">
+                            <i class="fas fa-user mr-2"></i>Full Name
+                        </label>
+                        <input type="text" id="signupName" required 
+                               class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-xl text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                               placeholder="Enter your full name">
+                    </div>
+                    <div>
+                        <label class="block text-white text-sm font-medium mb-2">
+                            <i class="fas fa-at mr-2"></i>Email
+                        </label>
+                        <input type="email" id="signupEmail" required 
+                               class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-xl text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                               placeholder="Enter your email">
+                    </div>
+                    <div>
+                        <label class="block text-white text-sm font-medium mb-2">
+                            <i class="fas fa-user-circle mr-2"></i>Username
+                        </label>
+                        <input type="text" id="signupUsername" required 
+                               class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-xl text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                               placeholder="Choose a username">
+                    </div>
+                    <div>
+                        <label class="block text-white text-sm font-medium mb-2">
+                            <i class="fas fa-lock mr-2"></i>Password
+                        </label>
+                        <input type="password" id="signupPassword" required 
+                               class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-xl text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                               placeholder="Create a password">
+                    </div>
+                    <button type="submit" class="w-full py-3 bg-white text-gray-800 rounded-xl font-semibold hover:bg-opacity-90 transition-all btn-glow">
+                        <i class="fas fa-user-plus mr-2"></i>Join HappyMeal
+                    </button>
+                </form>
+
+                <!-- Demo Credentials -->
+                <div class="mt-6 text-center text-white text-sm opacity-75">
+                    <p class="mb-2"><strong>Demo Account:</strong></p>
+                    <p>Username: demo | Password: demo123</p>
+                </div>
+            </div>
+
+            <!-- Messages -->
+            <div id="authMessage" class="mt-4 text-center"></div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="mainApp" class="hidden">
+        <!-- Header -->
+        <header class="gradient-bg shadow-2xl">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-6">
+                    <div class="flex items-center">
+                        <div class="text-4xl mr-4 floating">🍽️</div>
+                        <div>
+                            <h1 class="text-3xl font-bold text-white">HappyMeal</h1>
+                            <p class="text-white opacity-90">Your Personal Recipe Paradise</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-6">
+                        <nav class="hidden md:flex space-x-8">
+                            <button onclick="showSection('search')" class="nav-btn text-white hover:text-yellow-300 font-medium transition-all flex items-center">
+                                <i class="fas fa-search mr-2"></i>Search
+                            </button>
+                            <button onclick="showSection('ingredients')" class="nav-btn text-white hover:text-yellow-300 font-medium transition-all flex items-center">
+                                <i class="fas fa-seedling mr-2"></i>By Ingredients
+                            </button>
+                            <button onclick="showSection('cookbook')" class="nav-btn text-white hover:text-yellow-300 font-medium transition-all flex items-center">
+                                <i class="fas fa-book mr-2"></i>My Cookbook
+                            </button>
+                        </nav>
+                        
+                        <div class="flex items-center space-x-4">
+                            <div class="text-white">
+                                <i class="fas fa-user-circle mr-2"></i>
+                                <span id="userWelcome"></span>
+                            </div>
+                            <button onclick="logout()" class="px-4 py-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-all">
+                                <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Search Section -->
+            <section id="searchSection" class="section slide-in">
+                <div class="bg-white rounded-2xl shadow-xl p-8 mb-8 border border-gray-100">
+                    <div class="text-center mb-6">
+                        <h2 class="text-3xl font-bold text-dark mb-2">
+                            <i class="fas fa-search text-primary mr-3"></i>Discover Amazing Recipes
+                        </h2>
+                        <p class="text-gray-600">Search through thousands of delicious recipes</p>
+                    </div>
+                    <div class="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto">
+                        <div class="flex-1 relative">
+                            <i class="fas fa-utensils absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input 
+                                type="text" 
+                                id="searchInput" 
+                                placeholder="Search for recipes (e.g., chicken, pasta, cake...)"
+                                class="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                            >
+                        </div>
+                        <button 
+                            onclick="searchRecipes()" 
+                            class="px-8 py-4 bg-gradient-to-r from-primary to-warm-orange text-white rounded-xl hover:shadow-lg transition-all font-semibold btn-glow"
+                        >
+                            <i class="fas fa-search mr-2"></i>Search
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="searchResults" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+            </section>
+
+            <!-- Ingredients Section -->
+            <section id="ingredientsSection" class="section hidden slide-in">
+                <div class="bg-white rounded-2xl shadow-xl p-8 mb-8 border border-gray-100">
+                    <div class="text-center mb-6">
+                        <h2 class="text-3xl font-bold text-dark mb-2">
+                            <i class="fas fa-seedling text-secondary mr-3"></i>Cook with What You Have
+                        </h2>
+                        <p class="text-gray-600">Enter your ingredients and find perfect recipes</p>
+                    </div>
+                    <div class="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto">
+                        <div class="flex-1 relative">
+                            <i class="fas fa-carrot absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input 
+                                type="text" 
+                                id="ingredientsInput" 
+                                placeholder="Enter ingredients separated by commas (e.g., chicken, onion, garlic)"
+                                class="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent transition-all"
+                            >
+                        </div>
+                        <button 
+                            onclick="searchByIngredients()" 
+                            class="px-8 py-4 bg-gradient-to-r from-secondary to-soft-green text-white rounded-xl hover:shadow-lg transition-all font-semibold btn-glow"
+                        >
+                            <i class="fas fa-magic mr-2"></i>Find Recipes
+                        </button>
+                    </div>
+                    <div class="text-center mt-4">
+                        <p class="text-gray-500"><i class="fas fa-lightbulb text-yellow-500 mr-2"></i>Tip: Add multiple ingredients to get more specific suggestions!</p>
+                    </div>
+                </div>
+                
+                <div id="ingredientResults" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+            </section>
+
+            <!-- Cookbook Section -->
+            <section id="cookbookSection" class="section hidden slide-in">
+                <div class="bg-white rounded-2xl shadow-xl p-8 mb-8 border border-gray-100">
+                    <div class="text-center mb-6">
+                        <h2 class="text-3xl font-bold text-dark mb-2">
+                            <i class="fas fa-book text-accent mr-3"></i>Your Personal Cookbook
+                        </h2>
+                        <p class="text-gray-600">Your saved recipes and ratings</p>
+                    </div>
+                    <div class="flex justify-center">
+                        <div class="bg-gradient-to-r from-accent to-primary text-white px-6 py-3 rounded-full">
+                            <i class="fas fa-heart mr-2"></i>
+                            <span id="cookbookCount">0</span> Saved Recipes
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="cookbookResults" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-2xl text-center shadow-2xl">
+            <div class="loading w-16 h-16 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p class="text-dark font-semibold">Loading delicious recipes...</p>
+        </div>
+    </div>
+
+    <!-- Recipe Detail Modal -->
+    <div id="recipeModal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl max-w-5xl w-full max-h-screen overflow-y-auto shadow-2xl">
+            <div class="p-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 id="modalTitle" class="text-3xl font-bold text-dark"></h2>
+                    <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700 text-3xl transition-all hover:scale-110">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="modalContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let users = JSON.parse(localStorage.getItem('happymeal-users') || '[{"username":"demo","password":"demo123","name":"Demo User","email":"demo@happymeal.com"}]');
+        let currentUser = null;
+        let cookbook = [];
+        let ratings = {};
+
+        // Initialize user data
+        function initializeUserData() {
+            if (currentUser) {
+                cookbook = JSON.parse(localStorage.getItem(`happymeal-cookbook-${currentUser.username}`) || '[]');
+                ratings = JSON.parse(localStorage.getItem(`happymeal-ratings-${currentUser.username}`) || '{}');
+            }
+        }
+
+        // Save user data
+        function saveUserData() {
+            if (currentUser) {
+                localStorage.setItem(`happymeal-cookbook-${currentUser.username}`, JSON.stringify(cookbook));
+                localStorage.setItem(`happymeal-ratings-${currentUser.username}`, JSON.stringify(ratings));
+            }
+        }
+
+        // Event delegation for heart buttons
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('heart-btn') || e.target.closest('.heart-btn')) {
+                const button = e.target.classList.contains('heart-btn') ? e.target : e.target.closest('.heart-btn');
+                const recipeId = button.dataset.recipeId;
+                const recipeName = button.dataset.recipeName;
+                const recipeImage = button.dataset.recipeImage;
+                
+                if (recipeId && recipeName && recipeImage) {
+                    toggleCookbook(recipeId, recipeName, recipeImage);
+                }
+            }
+        });
+
+        // Function to update heart button appearance
+        function updateHeartButton(button, recipeId) {
+            const isInBook = isInCookbook(recipeId);
+            if (isInBook) {
+                button.classList.remove('bg-white', 'text-gray-600');
+                button.classList.add('bg-red-500', 'text-white');
+            } else {
+                button.classList.remove('bg-red-500', 'text-white');
+                button.classList.add('bg-white', 'text-gray-600');
+            }
+        }
+
+        // Toast notification function
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg text-white font-medium transition-all transform translate-x-full ${
+                type === 'success' ? 'bg-green-500' : 
+                type === 'error' ? 'bg-red-500' : 
+                'bg-blue-500'
+            }`;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full');
+            }, 100);
+            
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                setTimeout(() => {
+                    if (document.body.contains(toast)) {
+                        document.body.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // Authentication Functions
+        document.getElementById('loginToggle').addEventListener('click', function() {
+            switchToLogin();
+        });
+
+        document.getElementById('signupToggle').addEventListener('click', function() {
+            switchToSignup();
+        });
+
+        function switchToLogin() {
+            document.getElementById('loginToggle').classList.add('active-auth');
+            document.getElementById('signupToggle').classList.remove('active-auth');
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('signupForm').classList.add('hidden');
+            clearAuthMessage();
+        }
+
+        function switchToSignup() {
+            document.getElementById('signupToggle').classList.add('active-auth');
+            document.getElementById('loginToggle').classList.remove('active-auth');
+            document.getElementById('signupForm').classList.remove('hidden');
+            document.getElementById('loginForm').classList.add('hidden');
+            clearAuthMessage();
+        }
+
+        // Login functionality
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            
+            const user = users.find(u => u.username === username && u.password === password);
+            
+            if (user) {
+                currentUser = user;
+                saveCurrentUser();
+                initializeUserData();
+                showMainApp();
+                showAuthMessage('🎉 Welcome back! Loading your recipes...', 'success');
+                setTimeout(() => {
+                    document.getElementById('authSection').classList.add('hidden');
+                    document.getElementById('mainApp').classList.remove('hidden');
+                }, 1000);
+            } else {
+                showAuthMessage('❌ Invalid username or password!', 'error');
+            }
+        });
+
+        // Signup functionality
+        document.getElementById('signupForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('signupName').value.trim();
+            const email = document.getElementById('signupEmail').value.trim();
+            const username = document.getElementById('signupUsername').value.trim();
+            const password = document.getElementById('signupPassword').value.trim();
+
+            if (password.length < 6) {
+                showAuthMessage('❌ Password must be at least 6 characters long!', 'error');
+                return;
+            }
+
+            if (users.find(u => u.username === username)) {
+                showAuthMessage('❌ Username already exists!', 'error');
+                return;
+            }
+
+            if (users.find(u => u.email === email)) {
+                showAuthMessage('❌ Email already registered!', 'error');
+                return;
+            }
+
+            const newUser = { username, password, name, email };
+            users.push(newUser);
+            localStorage.setItem('happymeal-users', JSON.stringify(users));
+            
+            showAuthMessage('🎉 Account created successfully! Please login now.', 'success');
+            document.getElementById('signupForm').reset();
+            setTimeout(() => {
+                switchToLogin();
+            }, 2000);
+        });
+
+        function showMainApp() {
+            document.getElementById('userWelcome').textContent = currentUser.name;
+            updateCookbookCount();
+        }
+
+        function saveCurrentUser() {
+            if (currentUser) {
+                localStorage.setItem('happymeal-current-user', JSON.stringify(currentUser));
+            } else {
+                localStorage.removeItem('happymeal-current-user');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            cookbook = [];
+            ratings = {};
+            saveCurrentUser();
+            document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById('authSection').classList.remove('hidden');
+            document.getElementById('loginForm').reset();
+            document.getElementById('signupForm').reset();
+            switchToLogin();
+        }
+
+        function showAuthMessage(message, type) {
+            const messageDiv = document.getElementById('authMessage');
+            messageDiv.innerHTML = `
+                <div class="px-4 py-3 rounded-xl text-center font-medium ${type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}">
+                    ${message}
+                </div>
+            `;
+        }
+
+        function clearAuthMessage() {
+            document.getElementById('authMessage').innerHTML = '';
+        }
+
+        // API Functions
+        async function searchRecipes() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) {
+                showToast('🔍 Please enter a search term!', 'error');
+                return;
+            }
+
+            showLoading();
+            try {
+                const response = await fetch(`https://www.themealdb.com/api/json/v1/1/search.php?s=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                
+                hideLoading();
+                displayResults(data.meals, 'searchResults');
+            } catch (error) {
+                hideLoading();
+                console.error('Error fetching recipes:', error);
+                showToast('❌ Error fetching recipes. Please try again!', 'error');
+            }
+        }
+
+        async function searchByIngredients() {
+            const ingredients = document.getElementById('ingredientsInput').value.trim();
+            if (!ingredients) {
+                showToast('🥕 Please enter at least one ingredient!', 'error');
+                return;
+            }
+
+            showLoading();
+            try {
+                const ingredientList = ingredients.split(',').map(ing => ing.trim());
+                let allResults = [];
+
+                for (let ingredient of ingredientList) {
+                    const response = await fetch(`https://www.themealdb.com/api/json/v1/1/filter.php?i=${encodeURIComponent(ingredient)}`);
+                    const data = await response.json();
+                    if (data.meals) {
+                        allResults = allResults.concat(data.meals);
+                    }
+                }
+
+                const uniqueResults = allResults.filter((meal, index, self) => 
+                    index === self.findIndex(m => m.idMeal === meal.idMeal)
+                );
+
+                hideLoading();
+                displayResults(uniqueResults, 'ingredientResults');
+            } catch (error) {
+                hideLoading();
+                console.error('Error fetching recipes by ingredients:', error);
+                showToast('❌ Error fetching recipes. Please try again!', 'error');
+            }
+        }
+
+        async function getRecipeDetails(id) {
+            try {
+                const response = await fetch(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${id}`);
+                const data = await response.json();
+                return data.meals[0];
+            } catch (error) {
+                console.error('Error fetching recipe details:', error);
+                return null;
+            }
+        }
+
+        // Fixed Display Functions
+        function displayResults(meals, containerId) {
+            const container = document.getElementById(containerId);
+            
+            if (!meals || meals.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-16">
+                        <div class="text-8xl mb-6 opacity-50">🔍</div>
+                        <h3 class="text-2xl font-bold text-gray-600 mb-4">No recipes found</h3>
+                        <p class="text-gray-500 text-lg">Try searching with different keywords or ingredients</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = meals.map(meal => `
+                <div class="recipe-card bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+                    <div class="relative">
+                        <img src="${meal.strMealThumb}" alt="${meal.strMeal}" class="w-full h-56 object-cover">
+                        <div class="absolute top-4 right-4">
+                            <button 
+                                class="heart-btn p-3 rounded-full shadow-lg hover:scale-110 transition-all ${isInCookbook(meal.idMeal) ? 'bg-red-500 text-white' : 'bg-white text-gray-600'}"
+                                data-recipe-id="${meal.idMeal}"
+                                data-recipe-name="${meal.strMeal.replace(/"/g, '&quot;')}"
+                                data-recipe-image="${meal.strMealThumb}"
+                            >
+                                <i class="fas fa-heart"></i>
+                            </button>
+                        </div>
+                        <div class="absolute bottom-4 left-4">
+                            <span class="bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm font-medium">
+                                ${meal.strCategory || 'Category not specified'}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-dark mb-3 line-clamp-2">${meal.strMeal}</h3>
+                        
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center">
+                                <div class="flex mr-2">
+                                    ${generateStars(meal.idMeal)}
+                                </div>
+                                <span class="text-sm text-gray-600 font-medium">(${getRating(meal.idMeal).toFixed(1)})</span>
+                            </div>
+                            <div class="text-sm text-gray-500">
+                                <i class="fas fa-clock mr-1"></i>30 mins
+                            </div>
+                        </div>
+                        
+                        <button 
+                            onclick="showRecipeDetails('${meal.idMeal}')" 
+                            class="w-full px-6 py-3 bg-gradient-to-r from-primary to-warm-orange text-white rounded-xl hover:shadow-lg transition-all font-semibold btn-glow"
+                        >
+                            <i class="fas fa-eye mr-2"></i>View Recipe
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Enhanced Recipe Details Modal
+        async function showRecipeDetails(id) {
+            showLoading();
+            const recipe = await getRecipeDetails(id);
+            hideLoading();
+            
+            if (!recipe) {
+                showToast('❌ Error loading recipe details', 'error');
+                return;
+            }
+
+            const ingredients = [];
+            for (let i = 1; i <= 20; i++) {
+                const ingredient = recipe[`strIngredient${i}`];
+                const measure = recipe[`strMeasure${i}`];
+                if (ingredient && ingredient.trim()) {
+                    ingredients.push(`${measure ? measure.trim() + ' ' : ''}${ingredient.trim()}`);
+                }
+            }
+
+            document.getElementById('modalTitle').textContent = recipe.strMeal;
+            document.getElementById('modalContent').innerHTML = `
+                <div class="grid lg:grid-cols-2 gap-8">
+                    <div>
+                        <img src="${recipe.strMealThumb}" alt="${recipe.strMeal}" class="w-full rounded-2xl shadow-lg mb-6">
+                        <div class="bg-gray-50 rounded-2xl p-6 mb-6">
+                            <div class="grid grid-cols-2 gap-4 text-center">
+                                <div>
+                                    <div class="text-2xl font-bold text-primary">${recipe.strCategory}</div>
+                                    <div class="text-gray-600">Category</div>
+                                </div>
+                                <div>
+                                    <div class="text-2xl font-bold text-secondary">${recipe.strArea}</div>
+                                    <div class="text-gray-600">Cuisine</div>
+                                </div>
+                            </div>
+                            ${recipe.strTags ? `<div class="mt-4 text-center"><span class="text-gray-600">Tags: </span><span class="font-medium">${recipe.strTags}</span></div>` : ''}
+                        </div>
+                        
+                        <div class="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-2xl p-6">
+                            <h4 class="font-bold text-lg mb-3 text-center">
+                                <i class="fas fa-star text-yellow-500 mr-2"></i>Rate this recipe:
+                            </h4>
+                            <div class="flex justify-center items-center">
+                                ${generateRatingStars(recipe.idMeal)}
+                                <span class="ml-3 text-lg font-semibold text-gray-700">(${getRating(recipe.idMeal).toFixed(1)})</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-2xl font-bold mb-6 flex items-center">
+                            <i class="fas fa-list-ul text-secondary mr-3"></i>Ingredients
+                        </h3>
+                        <div class="bg-gray-50 rounded-2xl p-6 mb-6">
+                            <ul class="space-y-3">
+                                ${ingredients.map(ing => `
+                                    <li class="flex items-center bg-white rounded-lg p-3 shadow-sm">
+                                        <span class="w-3 h-3 bg-primary rounded-full mr-3"></span>
+                                        <span class="font-medium">${ing}</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                        
+                        <button 
+                            class="heart-btn w-full px-6 py-4 ${isInCookbook(recipe.idMeal) ? 'bg-red-500 hover:bg-red-600' : 'bg-primary hover:bg-red-600'} text-white rounded-xl transition-all font-semibold text-lg btn-glow"
+                            data-recipe-id="${recipe.idMeal}"
+                            data-recipe-name="${recipe.strMeal.replace(/"/g, '&quot;')}"
+                            data-recipe-image="${recipe.strMealThumb}"
+                        >
+                            <i class="fas fa-heart mr-2"></i>
+                            ${isInCookbook(recipe.idMeal) ? 'Remove from Cookbook' : 'Add to Cookbook'}
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="mt-8">
+                    <h3 class="text-2xl font-bold mb-6 flex items-center">
+                        <i class="fas fa-utensils text-primary mr-3"></i>Instructions
+                    </h3>
+                    <div class="bg-gray-50 rounded-2xl p-6">
+                        <div class="prose max-w-none text-gray-700 leading-relaxed">
+                            ${recipe.strInstructions.split('\n').map(step => step.trim()).filter(step => step).map((step, index) => `
+                                <div class="mb-4 flex">
+                                    <span class="flex-shrink-0 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-bold mr-4 mt-1">${index + 1}</span>
+                                    <p class="flex-1">${step}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+                
+                ${recipe.strYoutube ? `
+                    <div class="mt-8 text-center">
+                        <h3 class="text-2xl font-bold mb-4">
+                            <i class="fab fa-youtube text-red-600 mr-3"></i>Video Tutorial
+                        </h3>
+                        <a href="${recipe.strYoutube}" target="_blank" class="inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all font-semibold btn-glow">
+                            <i class="fab fa-youtube mr-2"></i>Watch on YouTube
+                        </a>
+                    </div>
+                ` : ''}
+            `;
+            
+            document.getElementById('recipeModal').classList.remove('hidden');
+        }
+
+        // Rating Functions
+        function generateStars(recipeId) {
+            const rating = getRating(recipeId);
+            let stars = '';
+            for (let i = 1; i <= 5; i++) {
+                stars += `<span class="star text-lg ${i <= rating ? 'filled' : 'empty'}">★</span>`;
+            }
+            return stars;
+        }
+
+        function generateRatingStars(recipeId) {
+            const rating = getRating(recipeId);
+            let stars = '';
+            for (let i = 1; i <= 5; i++) {
+                stars += `<span class="star cursor-pointer text-2xl ${i <= rating ? 'filled' : 'empty'}" onclick="setRating('${recipeId}', ${i})">★</span>`;
+            }
+            return stars;
+        }
+
+        function getRating(recipeId) {
+            return ratings[recipeId] || 0;
+        }
+
+        function setRating(recipeId, rating) {
+            ratings[recipeId] = rating;
+            saveUserData();
+            
+            const ratingContainer = event.target.parentNode;
+            ratingContainer.innerHTML = generateRatingStars(recipeId) + `<span class="ml-3 text-lg font-semibold text-gray-700">(${rating.toFixed(1)})</span>`;
+            
+            if (document.getElementById('cookbookSection').classList.contains('section') && !document.getElementById('cookbookSection').classList.contains('hidden')) {
+                displayCookbook();
+            }
+        }
+
+        // Fixed Cookbook Functions
+        function isInCookbook(recipeId) {
+            return cookbook.some(recipe => recipe.id === recipeId);
+        }
+
+        function toggleCookbook(recipeId, recipeName, recipeImage) {
+            if (!currentUser) {
+                showToast('Please login to save recipes to your cookbook!', 'error');
+                return;
+            }
+
+            const existingIndex = cookbook.findIndex(recipe => recipe.id === recipeId);
+            
+            if (existingIndex > -1) {
+                cookbook.splice(existingIndex, 1);
+                showToast(`💔 ${recipeName} removed from cookbook`, 'info');
+            } else {
+                cookbook.push({
+                    id: recipeId,
+                    name: recipeName,
+                    image: recipeImage,
+                    addedDate: new Date().toISOString()
+                });
+                showToast(`❤️ ${recipeName} added to your cookbook!`, 'success');
+            }
+            
+            saveUserData();
+            updateCookbookCount();
+            
+            // Update all heart buttons for this recipe
+            document.querySelectorAll(`.heart-btn[data-recipe-id="${recipeId}"]`).forEach(button => {
+                updateHeartButton(button, recipeId);
+            });
+            
+            // Refresh cookbook view if currently viewing it
+            const currentSection = document.querySelector('.section:not(.hidden)');
+            if (currentSection && currentSection.id === 'cookbookSection') {
+                displayCookbook();
+            }
+        }
+
+        function updateCookbookCount() {
+            const countElement = document.getElementById('cookbookCount');
+            if (countElement) {
+                countElement.textContent = cookbook.length;
+            }
+        }
+
+        async function displayCookbook() {
+            const container = document.getElementById('cookbookResults');
+            
+            if (cookbook.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-16">
+                        <div class="text-8xl mb-6 opacity-50">📚</div>
+                        <h3 class="text-2xl font-bold text-gray-600 mb-4">Your cookbook is empty</h3>
+                        <p class="text-gray-500 text-lg">Start adding recipes to build your personal collection!</p>
+                        <button onclick="showSection('search')" class="mt-6 px-6 py-3 bg-primary text-white rounded-xl hover:bg-red-600 transition-all font-semibold">
+                            <i class="fas fa-search mr-2"></i>Discover Recipes
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            showLoading();
+            
+            try {
+                const recipeDetails = await Promise.all(
+                    cookbook.map(async (recipe) => {
+                        const details = await getRecipeDetails(recipe.id);
+                        return details;
+                    })
+                );
+
+                hideLoading();
+                displayResults(recipeDetails.filter(recipe => recipe !== null), 'cookbookResults');
+                updateCookbookCount();
+            } catch (error) {
+                hideLoading();
+                console.error('Error loading cookbook:', error);
+            }
+        }
+
+        // Navigation Functions
+        function showSection(sectionName) {
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            const targetSection = document.getElementById(sectionName + 'Section');
+            targetSection.classList.remove('hidden');
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-yellow-300', 'font-bold');
+            });
+            event.target.classList.add('text-yellow-300', 'font-bold');
+            
+            if (sectionName === 'cookbook') {
+                displayCookbook();
+            }
+        }
+
+        // Utility Functions
+        function showLoading() {
+            document.getElementById('loadingSpinner').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingSpinner').classList.add('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('recipeModal').classList.add('hidden');
+        }
+
+        // Event Listeners
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchRecipes();
+            }
+        });
+
+        document.getElementById('ingredientsInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchByIngredients();
+            }
+        });
+
+        document.getElementById('recipeModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Initialize app
+        window.addEventListener('load', function() {
+            const savedUser = localStorage.getItem('happymeal-current-user');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                initializeUserData();
+                showMainApp();
+                document.getElementById('authSection').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                
+                setTimeout(() => {
+                    document.getElementById('searchInput').value = 'chicken';
+                    searchRecipes();
+                }, 1000);
+            }
+        });
+    </script>
+</body>
+</html>
